@@ -19,14 +19,14 @@ function puffTexture() {
   return new THREE.CanvasTexture(c);
 }
 
-export function createClouds({ scene, count = 26 }) {
+export function createClouds({ scene, count = 46 }) {
   const tex = puffTexture();
   const group = new THREE.Group();
-  const drift = [];
+  const base = [];
   for (let i = 0; i < count; i++) {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({
       map: tex, transparent: true, depthWrite: false,
-      opacity: 0.5 + Math.random() * 0.4, fog: false,
+      opacity: 0, fog: false,
     }));
     const w = 2600 + Math.random() * 5200;
     s.scale.set(w, w * (0.28 + Math.random() * 0.2), 1);
@@ -35,20 +35,33 @@ export function createClouds({ scene, count = 26 }) {
       1700 + Math.random() * 1500,
       (Math.random() - 0.5) * 46000,
     );
-    drift.push(8 + Math.random() * 7);
+    base.push({ op: 0.45 + Math.random() * 0.4, jitter: 0.6 + Math.random() * 0.8 });
     group.add(s);
   }
   scene.add(group);
 
   return {
-    update(dt, skyState) {
-      const tint = skyState ? 0.15 + 0.85 * skyState.day : 1;
+    // cloud cover decides how many puffs show and how heavy they look;
+    // wind decides where they go
+    update(dt, skyState, wx) {
+      const cover = wx?.cloud ?? 0.4;
+      const storm = wx?.storm ?? 0;
+      const visibleN = Math.round(6 + cover * (group.children.length - 6));
+      const day = skyState ? skyState.day : 1;
+      const tint = (0.15 + 0.85 * day) * (1 - storm * 0.55);
+      const wv = wx?.windVec;
       for (let i = 0; i < group.children.length; i++) {
         const s = group.children[i];
-        s.position.x += drift[i] * dt;
-        s.position.z += drift[i] * 0.55 * dt;
+        const b = base[i];
+        const speed = wv ? 1 : 0;
+        s.position.x += (wv ? wv.x * 3 * b.jitter : 8 * b.jitter) * dt;
+        s.position.z += (wv ? wv.z * 3 * b.jitter : 5 * b.jitter) * dt;
         if (s.position.x > 26000) s.position.x = -26000;
+        if (s.position.x < -26000) s.position.x = 26000;
         if (s.position.z > 26000) s.position.z = -26000;
+        if (s.position.z < -26000) s.position.z = 26000;
+        const target = i < visibleN ? b.op * (0.55 + 0.45 * cover) : 0;
+        s.material.opacity += (target - s.material.opacity) * Math.min(1, dt * 0.5);
         s.material.color.setScalar(tint);
       }
     },

@@ -48,6 +48,8 @@ function makeStars() {
 }
 
 export function createSky({ scene, renderer, island }) {
+  // atmospheric haze — distance fades toward the horizon color
+  scene.fog = new THREE.FogExp2(0xb9cddb, 1.35e-5);
   const sky = new Sky();
   sky.scale.setScalar(SKY_SCALE);
   const u = sky.material.uniforms;
@@ -78,7 +80,9 @@ export function createSky({ scene, renderer, island }) {
   const moonDir = new THREE.Vector3();
   const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-  function update(date) {
+  const fogDay = new THREE.Color(0xb9cddb), fogDusk = new THREE.Color(0x8a6a58), fogNight = new THREE.Color(0x060a12);
+
+  function update(date, wx) {
     const sp = sunPosition(date, island.lat, island.lon);
     const mp = moonPosition(date, island.lat, island.lon);
     toDirection(sp, sunDir);
@@ -88,11 +92,17 @@ export function createSky({ scene, renderer, island }) {
     const altDeg = sp.altitude * 180 / Math.PI;
     const day = smooth(-8, 12, altDeg);          // 0 night → 1 day
     const dusk = smooth(-10, 2, altDeg) * (1 - smooth(4, 14, altDeg)); // golden band
+    const overcast = wx?.cloud ?? 0;
 
-    renderer.toneMappingExposure = 0.14 + 0.78 * day;
+    renderer.toneMappingExposure = (0.14 + 0.78 * day) * (1 - 0.32 * overcast * day);
+
+    // haze thickens in weather; color follows the light
+    scene.fog.color.copy(fogNight).lerp(fogDay, day).lerp(fogDusk, dusk * 0.55)
+      .multiplyScalar(1 - 0.35 * overcast * day);
+    scene.fog.density = 1.35e-5 * (1 + overcast * 1.6 + (wx?.storm ?? 0) * 2.2);
 
     sun.position.copy(sunDir).multiplyScalar(80000);
-    sun.intensity = 2.4 * day;
+    sun.intensity = 2.4 * day * (1 - 0.65 * overcast);
     sun.color.setHSL(0.09 + 0.045 * day, dusk > 0.3 ? 0.85 : 0.25, 0.6 + 0.3 * day);
 
     const moonUp = Math.max(0, Math.sin(mp.altitude));

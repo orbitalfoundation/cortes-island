@@ -3,9 +3,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-export function createScene(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+export function createScene(canvas, { mobile = false } = {}) {
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile, logarithmicDepthBuffer: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.6 : 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;

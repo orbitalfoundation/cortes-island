@@ -39,19 +39,34 @@ function recency(item) {
   return 0.25 + 0.75 * Math.exp(-ageDays(item) / 45);
 }
 
-export function createCards({ scene, camera, frame, container, detailEl, onFocus }) {
+export function createCards({ scene, camera, frame, container, detailEl, onFocus, exaggeration = 1, maxCards = MAX_CARDS }) {
   const entries = new Map(); // id -> entry
   const hidden = new Set();  // categories toggled off
   let focused = null;
+  const ex = exaggeration;
 
   // --- tether lines (one segment per carded item) ---
   const lineGeo = new THREE.BufferGeometry();
   let linePos = new Float32Array(0), lineCol = new Float32Array(0);
   const lines = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({
-    vertexColors: true, transparent: true, opacity: 0.5, depthWrite: false,
+    vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false,
   }));
   lines.frustumCulled = false;
   scene.add(lines);
+
+  // --- ground-contact spheres: soft translucent domes marking where each
+  // tether actually touches the island ---
+  const MAX_TOUCH = 1000;
+  const touch = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(1, 18, 14),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.38, depthWrite: false }),
+    MAX_TOUCH,
+  );
+  touch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  touch.count = 0;
+  touch.frustumCulled = false;
+  scene.add(touch);
+  const touchDummy = new THREE.Object3D();
 
   // --- glow points for the long tail ---
   const pointGeo = new THREE.BufferGeometry();
@@ -125,7 +140,7 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
   function rebuild() {
     const all = [...entries.values()].filter((e) => !hidden.has(e.item.meta.category));
     all.sort((a, b) => (b.imp * b.rec) - (a.imp * a.rec));
-    const carded = new Set(all.slice(0, MAX_CARDS));
+    const carded = new Set(all.slice(0, maxCards));
 
     for (const e of entries.values()) {
       const want = carded.has(e);
@@ -158,6 +173,19 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
     });
     pointGeo.setAttribute('position', new THREE.BufferAttribute(pp, 3));
     pointGeo.setAttribute('color', new THREE.BufferAttribute(pc, 3));
+
+    // ground-contact domes for every visible item
+    touch.count = Math.min(all.length, MAX_TOUCH);
+    all.slice(0, MAX_TOUCH).forEach((e, j) => {
+      const r = 20 + e.imp * 26;
+      touchDummy.position.set(e.anchor.x, (e.groundY ?? e.anchor.y * ex) + 2, e.anchor.z);
+      touchDummy.scale.set(r, r * 0.55, r); // squashed dome hugging the ground
+      touchDummy.updateMatrix();
+      touch.setMatrixAt(j, touchDummy.matrix);
+      touch.setColorAt(j, e.color);
+    });
+    touch.instanceMatrix.needsUpdate = true;
+    if (touch.instanceColor) touch.instanceColor.needsUpdate = true;
   }
 
   // --- ground snapping: a few raycasts per frame against loaded tiles ---
@@ -172,14 +200,14 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
       tries++;
       if (e.groundY == null) e.snapTries = (e.snapTries ?? 0) + 1;
       else continue;
-      ray.set(new THREE.Vector3(e.anchor.x, 2500, e.anchor.z), down);
+      ray.set(new THREE.Vector3(e.anchor.x, 2500 * ex, e.anchor.z), down);
       const hit = ray.intersectObject(tilesGroup, true)[0];
       // only trust hits near the real surface — early coarse-LOD geometry can
       // sit tens of km below and must not be cached
-      if (hit && hit.point.y > e.anchor.y - 80 && hit.point.y < e.anchor.y + 900) {
+      if (hit && hit.point.y > e.anchor.y * ex - 80 * ex && hit.point.y < e.anchor.y * ex + 900 * ex) {
         e.groundY = hit.point.y; n++;
       } else if (e.snapTries > 40) {
-        e.groundY = Math.max(e.anchor.y, 0); n++; // give up: use ellipsoid surface
+        e.groundY = Math.max(e.anchor.y * ex, 0); n++; // give up: use ellipsoid surface
       }
     }
     if (n) rebuild();

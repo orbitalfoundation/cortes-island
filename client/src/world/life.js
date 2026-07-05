@@ -39,10 +39,10 @@ function buildFerry() {
   return ferry;
 }
 
-function createFerry({ scene, frame, ferryRoute }) {
+function createFerry({ scene, frame, ferryRoute, seaY }) {
   const pts = ferryRoute.map((p) => {
     const v = frame.toLocal(p.lat, p.lon, 0);
-    v.y = SEA_LEVEL + 2;
+    v.y = seaY;
     return v;
   });
   const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal', 0.9);
@@ -50,7 +50,31 @@ function createFerry({ scene, frame, ferryRoute }) {
   scene.add(mesh);
   const pos = new THREE.Vector3(), ahead = new THREE.Vector3();
 
-  function update(date) {
+  // wake: a fading trail of foam sprites dropped astern while underway
+  const foamTex = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(32, 32, 2, 32, 32, 30);
+    grad.addColorStop(0, 'rgba(235,245,250,0.65)');
+    grad.addColorStop(1, 'rgba(235,245,250,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  const WAKE_N = 42;
+  const wake = [];
+  for (let i = 0; i < WAKE_N; i++) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: foamTex, transparent: true, opacity: 0, depthWrite: false, fog: false,
+    }));
+    s.position.y = seaY + 0.5;
+    scene.add(s);
+    wake.push({ s, age: 99 });
+  }
+  let wakeI = 0, wakeClock = 0;
+
+  function update(date, dt = 0.016) {
     const now = minutesNow(date);
     let t = null; // 0 at Heriot, 1 at Whaletown
     for (const dep of DEPART_HERIOT) {
@@ -78,6 +102,23 @@ function createFerry({ scene, frame, ferryRoute }) {
     mesh.position.copy(pos);
     mesh.position.y += Math.sin(date.valueOf() / 900) * 0.35; // gentle swell
     if (t != null) mesh.lookAt(ahead.x, mesh.position.y, ahead.z);
+
+    // wake bookkeeping
+    wakeClock += dt;
+    if (t != null && wakeClock > 0.45) {
+      wakeClock = 0;
+      const slot = wake[wakeI++ % WAKE_N];
+      slot.age = 0;
+      slot.s.position.set(pos.x, seaY + 0.5, pos.z);
+    }
+    for (const f of wake) {
+      f.age += dt;
+      const k = f.age / 14; // seconds to fade
+      if (k >= 1) { f.s.material.opacity = 0; continue; }
+      f.s.material.opacity = 0.5 * (1 - k);
+      const sz = 14 + k * 120;
+      f.s.scale.set(sz, sz * 0.55, 1);
+    }
   }
   return { update };
 }
@@ -137,7 +178,7 @@ function createBirds({ scene, frame, places }) {
 }
 
 // --- whale -------------------------------------------------------------------
-function createWhale({ scene, frame }) {
+function createWhale({ scene, frame, seaY }) {
   // surfacing line in Sutil Channel, west of the island
   const a = frame.toLocal(50.045, -125.06, 0);
   const b = frame.toLocal(50.13, -125.09, 0);
@@ -168,7 +209,7 @@ function createWhale({ scene, frame }) {
       const k = cyc / 9;
       const arc = Math.sin(k * Math.PI);
       body.visible = true;
-      body.position.set(pos.x + cyc * 6, SEA_LEVEL - 2.4 + arc * 3.4, pos.z);
+      body.position.set(pos.x + cyc * 6, seaY - 4.4 + arc * 3.4, pos.z);
       body.rotation.z = (k - 0.5) * -0.5;
       spout.position.set(body.position.x + 8, body.position.y + 9, body.position.z);
       spout.material.opacity = k < 0.35 ? arc * 0.75 : Math.max(0, 0.75 - (k - 0.35) * 2.4);
@@ -180,13 +221,13 @@ function createWhale({ scene, frame }) {
   return { update };
 }
 
-export function createLife({ scene, frame, config }) {
-  const ferry = createFerry({ scene, frame, ferryRoute: config.ferryRoute });
+export function createLife({ scene, frame, config, seaY = SEA_LEVEL + 2 }) {
+  const ferry = createFerry({ scene, frame, ferryRoute: config.ferryRoute, seaY });
   const birds = createBirds({ scene, frame, places: config.places });
-  const whale = createWhale({ scene, frame });
+  const whale = createWhale({ scene, frame, seaY });
   return {
-    update(t, date) {
-      ferry.update(date);
+    update(t, date, dt) {
+      ferry.update(date, dt);
       birds.update(t);
       whale.update(t);
     },

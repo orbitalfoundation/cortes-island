@@ -28,6 +28,7 @@ body {
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7);
 }
 #clock { font-size: 13px; color: var(--ink-2); margin-top: 3px; letter-spacing: 0.06em; }
+#weather { font-size: 12px; color: var(--ink-2); margin-top: 2px; letter-spacing: 0.05em; opacity: 0.85; }
 
 #legend { display: flex; gap: 8px; flex-wrap: wrap; pointer-events: auto; }
 .chip {
@@ -137,7 +138,26 @@ body {
 }
 @keyframes pulse { 0%, 100% { transform: scale(0.7); opacity: 0.6; } 50% { transform: scale(1.15); opacity: 1; } }
 
-@media (max-width: 720px) {
-  .card { width: 170px; }
-  #title h1 { font-size: 20px; }
+/* ---------- mobile ---------- */
+@media (max-width: 720px), (pointer: coarse) and (max-width: 1024px) {
+  .card { width: 158px; padding: 7px 9px; }
+  .card-title { font-size: 11.5px; -webkit-line-clamp: 2; }
+  #title h1 { font-size: 19px; }
+  #hud { padding: 14px 14px calc(12px + env(safe-area-inset-bottom)); }
+  #legend {
+    flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; padding-bottom: 2px; margin-right: -14px;
+  }
+  #legend::-webkit-scrollbar { display: none; }
+  .chip { flex: none; padding: 7px 12px; }
+  /* detail becomes a bottom sheet */
+  #detail {
+    top: auto; left: 10px; right: 10px; bottom: 10px;
+    width: auto; max-height: 62vh;
+    border-radius: 16px 16px 12px 12px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  #detail.hidden { transform: translateY(30px); }
+  #detail img { max-height: 160px; }
+  #detail h2 { font-size: 16px; }
 }
