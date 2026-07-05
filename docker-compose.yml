@@ -1,0 +1,27 @@
+# cortes as containers: mongo + the node app with the repo bind-mounted —
+# no image builds; a deploy is rsync/git pull + npm install + restart.
+# exe.dev proxies https://<vm>.exe.xyz to port 8000.
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db   # named volume: survives redeploys
+
+  app:
+    image: node:24-bookworm-slim
+    restart: unless-stopped
+    working_dir: /site
+    command: node --env-file-if-exists=.env server/index.js
+    environment:
+      - MONGO_URL=mongodb://mongo:27017
+      - PORT=8000
+    volumes:
+      - .:/site
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongo
+
+volumes:
+  mongo-data:

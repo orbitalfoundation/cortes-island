@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cortes Island — a living portrait</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏝️</text></svg>" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene"></canvas>
+    <div id="cards"></div>
+    <div id="hud">
+      <div id="title">
+        <h1>Cortes Island</h1>
+        <div id="clock"></div>
+      </div>
+      <div id="legend"></div>
+    </div>
+    <div id="detail" class="hidden"></div>
+    <div id="loading"><div class="pulse"></div><span>arriving over Cortes Island…</span></div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
