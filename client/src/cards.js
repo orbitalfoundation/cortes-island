@@ -4,6 +4,9 @@
 // opacity ∝ recency.
 
 import * as THREE from 'three';
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 
 // dataviz reference palette, dark-surface column (validated); legend order =
 // slot order. Labels on every card are the secondary encoding.
@@ -45,14 +48,14 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
   let focused = null;
   const ex = exaggeration;
 
-  // --- tether lines (one segment per carded item) ---
-  const lineGeo = new THREE.BufferGeometry();
-  let linePos = new Float32Array(0), lineCol = new Float32Array(0);
-  const lines = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({
-    vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false,
-  }));
-  lines.frustumCulled = false;
-  scene.add(lines);
+  // --- tether lines: screen-space fat lines so they hold ~3px at any zoom ---
+  const lineMat = new LineMaterial({
+    vertexColors: true, transparent: true, opacity: 0.9,
+    linewidth: 3, depthWrite: false, // linewidth in pixels
+  });
+  lineMat.resolution.set(window.innerWidth, window.innerHeight);
+  window.addEventListener('resize', () => lineMat.resolution.set(window.innerWidth, window.innerHeight));
+  let lines = null;
 
   // --- ground-contact spheres: soft translucent domes marking where each
   // tether actually touches the island ---
@@ -150,19 +153,24 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
     }
 
     // tether lines for carded items
-    linePos = new Float32Array(carded.size * 6);
-    lineCol = new Float32Array(carded.size * 6);
-    let i = 0;
+    const linePos = [], lineCol = [];
     for (const e of carded) {
-      e.lineIndex = i;
       const y0 = e.groundY ?? 0;
-      linePos.set([e.anchor.x, y0, e.anchor.z, e.anchor.x, y0 + e.floatY, e.anchor.z], i * 6);
+      linePos.push(e.anchor.x, y0, e.anchor.z, e.anchor.x, y0 + e.floatY, e.anchor.z);
       const c = e.color;
-      lineCol.set([c.r, c.g, c.b, c.r, c.g, c.b], i * 6);
-      i++;
+      lineCol.push(c.r, c.g, c.b, c.r, c.g, c.b);
     }
-    lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
-    lineGeo.setAttribute('color', new THREE.BufferAttribute(lineCol, 3));
+    if (lines) { scene.remove(lines); lines.geometry.dispose(); }
+    if (linePos.length) {
+      const geo = new LineSegmentsGeometry();
+      geo.setPositions(linePos);
+      geo.setColors(lineCol);
+      lines = new LineSegments2(geo, lineMat);
+      lines.frustumCulled = false;
+      scene.add(lines);
+    } else {
+      lines = null;
+    }
 
     // points for everything visible (carded ones too — reads as a glowing node)
     const pp = new Float32Array(all.length * 3);
@@ -270,7 +278,8 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
       if (!visible) continue;
       const scale = Math.max(0.42, Math.min(1, 5200 / dist));
       e.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(8px,-50%) scale(${scale.toFixed(3)})`;
-      e.el.style.opacity = (e.rec * (focused && focused !== e ? 0.35 : 1)).toFixed(2);
+      // recency drives priority and glow, not legibility — cards stay solid
+      e.el.style.opacity = focused && focused !== e ? '0.35' : '1';
       e.el.style.zIndex = String(100000 - Math.round(dist));
     }
   }

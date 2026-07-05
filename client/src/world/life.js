@@ -103,6 +103,8 @@ function createFerry({ scene, frame, ferryRoute, seaY }) {
     mesh.position.y += Math.sin(date.valueOf() / 900) * 0.35; // gentle swell
     if (t != null) mesh.lookAt(ahead.x, mesh.position.y, ahead.z);
 
+    state.sailing = t != null;
+    state.progress = t;
     // wake bookkeeping
     wakeClock += dt;
     if (t != null && wakeClock > 0.45) {
@@ -120,7 +122,8 @@ function createFerry({ scene, frame, ferryRoute, seaY }) {
       f.s.scale.set(sz, sz * 0.55, 1);
     }
   }
-  return { update };
+  const state = { sailing: false, progress: null, pos: mesh.position };
+  return { update, state };
 }
 
 // --- birds -------------------------------------------------------------------
@@ -213,12 +216,19 @@ function createWhale({ scene, frame, seaY }) {
       body.rotation.z = (k - 0.5) * -0.5;
       spout.position.set(body.position.x + 8, body.position.y + 9, body.position.z);
       spout.material.opacity = k < 0.35 ? arc * 0.75 : Math.max(0, 0.75 - (k - 0.35) * 2.4);
+      state.surfacing = true;
+      state.pos.copy(body.position);
     } else {
       body.visible = false;
       spout.material.opacity = 0;
+      state.surfacing = false;
+      // where it will surface next, so the marker can point ahead of time
+      state.pos.lerpVectors(a, b, (Math.sin((Math.floor(t / CYCLE) + 1) * 0.37) + 1) / 2);
+      state.pos.y = SEA_LEVEL;
     }
   }
-  return { update };
+  const state = { surfacing: false, pos: new THREE.Vector3() };
+  return { update, state };
 }
 
 export function createLife({ scene, frame, config, seaY = SEA_LEVEL + 2 }) {
@@ -226,6 +236,8 @@ export function createLife({ scene, frame, config, seaY = SEA_LEVEL + 2 }) {
   const birds = createBirds({ scene, frame, places: config.places });
   const whale = createWhale({ scene, frame, seaY });
   return {
+    ferry: ferry.state,
+    whale: whale.state,
     update(t, date, dt) {
       ferry.update(date, dt);
       birds.update(t);

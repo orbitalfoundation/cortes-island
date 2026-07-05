@@ -12,7 +12,7 @@ import {
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { buildMask, MASK_EXTENT } from './mask.js';
 
-export function createTiles({ scene, camera, renderer, frame, cesiumKey, exaggeration = 1, carve = true, onReady }) {
+export function createTiles({ scene, camera, renderer, frame, cesiumKey, exaggeration = 1, carve = true, perimeter = [], onReady }) {
   const tiles = new TilesRenderer();
   tiles.registerPlugin(new CesiumIonAuthPlugin({ apiToken: cesiumKey, assetId: '2275207', autoRefreshToken: true }));
   tiles.registerPlugin(new TileCompressionPlugin());
@@ -35,7 +35,7 @@ export function createTiles({ scene, camera, renderer, frame, cesiumKey, exagger
   scene.add(tiles.group);
 
   // --- carve-out: shared uniforms patched into every tile material ---
-  const maskUniform = { value: buildMask(frame) };
+  const maskUniform = { value: buildMask(frame, perimeter) };
   const carveUniform = { value: carve ? 1 : 0 };
 
   function patchMaterial(mat) {

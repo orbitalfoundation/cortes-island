@@ -30,7 +30,25 @@ body {
 #clock { font-size: 13px; color: var(--ink-2); margin-top: 3px; letter-spacing: 0.06em; }
 #weather { font-size: 12px; color: var(--ink-2); margin-top: 2px; letter-spacing: 0.05em; opacity: 0.85; }
 
+#hud-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+#audio-controls { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: auto; }
+.chip.audio { font-size: 12px; }
+.chip.audio.off { opacity: 0.4; }
+
 #legend { display: flex; gap: 8px; flex-wrap: wrap; pointer-events: auto; }
+
+/* --- ferry / whale locator markers --- */
+#life-markers { position: fixed; inset: 0; pointer-events: none; z-index: 90000; }
+.life-marker {
+  position: absolute; left: 0; top: 0;
+  pointer-events: auto; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--panel-line);
+  color: var(--ink); font-size: 11.5px; letter-spacing: 0.04em;
+  padding: 5px 11px; border-radius: 999px;
+  backdrop-filter: blur(8px); white-space: nowrap;
+  transition: opacity 0.3s;
+}
+.life-marker:hover { border-color: rgba(255, 255, 255, 0.35); }
 .chip {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 6px 12px; border-radius: 999px;

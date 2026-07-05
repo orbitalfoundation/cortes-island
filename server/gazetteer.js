@@ -77,13 +77,23 @@ export function insideBbox(lat, lon) {
   return lat >= b.south && lat <= b.north && lon >= b.west && lon <= b.east;
 }
 
-// Deterministic scatter for items that only geolocate to "the island":
-// hash the id into a stable offset so cards don't pile onto one point but
-// also don't jump around between fetches.
-export function scatterAround(id, lat = ISLAND.lat, lon = ISLAND.lon, radiusDeg = 0.018) {
+// Deterministic scatter for items that only geolocate to "the island".
+// The island's geographic center is Hague Lake, so instead of scattering
+// around the centroid (cards in the water), placeless items land near one of
+// the settlements — hash-picked so each item keeps a stable spot.
+const LAND_ANCHORS = ['Mansons Landing', 'Whaletown', 'Squirrel Cove', 'Smelt Bay',
+  'Cortes Bay', 'Gorge Harbour', 'Hollyhock', 'Linnaea Farm', 'Cortes Island School'];
+
+function hashId(id) {
   let h = 2166136261;
   for (let i = 0; i < id.length; i++) { h ^= id.charCodeAt(i); h = Math.imul(h, 16777619); }
-  const a = ((h >>> 0) % 3600) / 3600 * Math.PI * 2;
-  const r = (((h >>> 8) % 1000) / 1000) * radiusDeg;
-  return { lat: lat + Math.sin(a) * r, lon: lon + Math.cos(a) * r * 1.5 };
+  return h >>> 0;
+}
+
+export function scatterAround(id) {
+  const h = hashId(id);
+  const anchor = PLACES.find((p) => p.name === LAND_ANCHORS[h % LAND_ANCHORS.length]) ?? ISLAND;
+  const a = (h % 3600) / 3600 * Math.PI * 2;
+  const r = 0.0012 + ((h >> 8) % 1000) / 1000 * 0.0035; // ~130–520 m inland spread
+  return { lat: anchor.lat + Math.sin(a) * r, lon: anchor.lon + Math.cos(a) * r * 1.55 };
 }

@@ -8,8 +8,13 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import { Server as SocketServer } from 'socket.io';
 import { createBus } from '@orbitalfoundation/bus';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+
+function readJson(url, fallback) {
+  try { return JSON.parse(readFileSync(new URL(url, import.meta.url), 'utf8')); }
+  catch { return fallback; }
+}
 import { attachStore } from './store.js';
 import { startScheduler, runOnce } from './scheduler.js';
 import { FERRY_ROUTE, ISLAND, PLACES } from './gazetteer.js';
@@ -34,12 +39,14 @@ export async function createServer({
     ok: true, store: store.backend, items: await store.count(),
   }));
 
-  // client bootstrap: keys + world constants stay server-side
+  // client bootstrap: keys + world constants + deploy config stay server-side
   app.get('/api/config', async () => ({
     cesiumKey: process.env.CESIUM_KEY ?? null,
     island: ISLAND,
     places: PLACES,
     ferryRoute: FERRY_ROUTE,
+    perimeter: readJson('../data/perimeter.json', []), // real OSM coastlines
+    ...readJson('../config.json', {}),                 // carve, exaggeration, radio…
   }));
 
   app.post('/api/fetch', async () => ({ ok: true, stats: await runOnce(bus, log) }));

@@ -1,0 +1,62 @@
+[
+  {
+    "title": "ʔaǰɛčxʷot — \"How are you?\" · Klahoose, Tla'amin & Homalco territory",
+    "link": "https://cortesnaturalfoodcoop.com",
+    "summary": "Cortes Island is the traditional territory of the Klahoose, Tla'amin (Sliammon) and Homalco First Nations — Northern Coast Salish peoples whose shared language is ʔayʔaǰuθəm. The welcome sign at the Cortes Natural Food Co-op opens with the ʔayʔaǰuθəm greeting ʔaǰɛčxʷot. Cortes is a rainforest island at the northern tip of the Salish Sea.",
+    "lat": 50.0655, "lon": -124.9788,
+    "place": "Mansons Landing",
+    "category": "culture",
+    "importance": 0.85,
+    "topics": ["klahoose", "tla'amin", "homalco", "ʔayʔaǰuθəm", "coast salish"]
+  },
+  {
+    "title": "Klahoose First Nation — T'oq (Squirrel Cove)",
+    "link": "https://klahoose.org",
+    "summary": "The Klahoose First Nation's main community on Cortes is at T'oq (Squirrel Cove). Klahoose traditional territory spans Cortes Island and Toba Inlet. The nation operates Klahoose Coastal Adventures and the Klahoose Wilderness Resort in Desolation Sound, sharing culture, language and territory with visitors.",
+    "lat": 50.1187, "lon": -124.9202,
+    "place": "Squirrel Cove",
+    "category": "culture",
+    "importance": 0.8,
+    "topics": ["klahoose", "first nations", "t'oq", "desolation sound"]
+  },
+  {
+    "title": "Cortes Island Museum & Archives",
+    "link": "https://cortesmuseum.com",
+    "summary": "Local museum in Mansons Landing keeping the island's stories: First Nations heritage, settler history, natural history collections, and a photographic archive of island life.",
+    "lat": 50.0672, "lon": -124.9782,
+    "place": "Mansons Landing",
+    "category": "culture",
+    "importance": 0.65,
+    "topics": ["museum", "history", "archives"]
+  },
+  {
+    "title": "Hollyhock — learning & retreat centre",
+    "link": "https://hollyhock.ca",
+    "summary": "Canada's well-known lifelong-learning centre on the beach at Highfield, hosting workshops, artists, writers and leadership programs since 1982.",
+    "lat": 50.0343, "lon": -124.9761,
+    "place": "Hollyhock",
+    "category": "culture",
+    "importance": 0.6,
+    "topics": ["retreat", "arts", "education"]
+  },
+  {
+    "title": "CKTZ 89.5 FM — Cortes Community Radio",
+    "link": "https://cortesradio.ca",
+    "summary": "The island's community radio station, broadcasting local voices, music and news from Mansons Landing — streaming live around the world.",
+    "lat": 50.0640, "lon": -124.9800,
+    "place": "Mansons Landing",
+    "category": "culture",
+    "importance": 0.6,
+    "topics": ["radio", "music", "community media"]
+  },
+  {
+    "title": "The Hague–Gunflint community watershed",
+    "link": "https://www.cortesisland.com",
+    "summary": "Hague and Gunflint Lakes form the island's freshwater heart. Water is shed from the surrounding land after rain and snowmelt, traveling through streams and groundwater into the lakes — what happens on the land shapes the health of the water.",
+    "lat": 50.0595, "lon": -124.9610,
+    "place": "Hague Lake",
+    "category": "reference",
+    "importance": 0.55,
+    "topics": ["watershed", "freshwater", "ecology"]
+  }
+]

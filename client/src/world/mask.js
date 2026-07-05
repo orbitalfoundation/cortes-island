@@ -24,7 +24,10 @@ const BLOBS = [
   [49.950, -125.002, 500],                             // Mitlenatch
 ];
 
-export function buildMask(frame) {
+// `perimeter` is the real OSM coastline set from /api/config
+// ([{name, ring: [[lat,lon],…]}]); the hand-drawn polygon above is only the
+// fallback when that data is missing. `padM` is the carve padding in meters.
+export function buildMask(frame, perimeter = [], padM = 600) {
   const SIZE = 1024;
   const c = document.createElement('canvas');
   c.width = c.height = SIZE;
@@ -39,27 +42,44 @@ export function buildMask(frame) {
   };
   const mPerPx = MASK_EXTENT / SIZE;
 
-  g.filter = 'blur(9px)';
+  g.filter = 'blur(6px)';
   g.fillStyle = '#fff';
   g.strokeStyle = '#fff';
-
-  // island polygon, generously buffered so the approximation forgives itself
-  g.lineWidth = 1600 / mPerPx;
   g.lineJoin = 'round';
-  g.beginPath();
-  CORTES.forEach(([lat, lon], i) => {
-    const [x, y] = toXY(lat, lon);
-    i ? g.lineTo(x, y) : g.moveTo(x, y);
-  });
-  g.closePath();
-  g.fill();
-  g.stroke();
 
-  for (const [lat, lon, r] of BLOBS) {
-    const [x, y] = toXY(lat, lon);
+  const drawRing = (ring, pad) => {
+    g.lineWidth = Math.max(1, (pad * 2) / mPerPx);
     g.beginPath();
-    g.arc(x, y, (r + 350) / mPerPx, 0, Math.PI * 2);
+    ring.forEach(([lat, lon], i) => {
+      const [x, y] = toXY(lat, lon);
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
+    });
+    g.closePath();
     g.fill();
+    g.stroke();
+  };
+
+  const rings = perimeter.filter((p) => p.ring?.length >= 4);
+  if (rings.length) {
+    for (const p of rings) drawRing(p.ring, padM);
+    const have = new Set(rings.map((p) => p.name));
+    // satellite islands OSM didn't give us fall back to blobs
+    for (const [lat, lon, r] of BLOBS) {
+      if (have.has('Marina Island') && Math.abs(lon + 125.04) < 0.03) continue;
+      if (have.has('Hernando Island') && lat < 50.0 && Math.abs(lon + 124.935) < 0.03) continue;
+      const [x, y] = toXY(lat, lon);
+      g.beginPath();
+      g.arc(x, y, (r + padM) / mPerPx, 0, Math.PI * 2);
+      g.fill();
+    }
+  } else {
+    drawRing(CORTES, 1200);
+    for (const [lat, lon, r] of BLOBS) {
+      const [x, y] = toXY(lat, lon);
+      g.beginPath();
+      g.arc(x, y, (r + 400) / mPerPx, 0, Math.PI * 2);
+      g.fill();
+    }
   }
   g.filter = 'none';
 
