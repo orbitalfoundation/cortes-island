@@ -22,10 +22,19 @@ posts — hovering over the places they belong to.
   2275207 via `3d-tiles-renderer` + three.js) with:
   - real time-of-day: computed sun & moon positions, stars, tone-mapped
     day/dusk/night (keys `[` `]` scrub time, `0` resets, `?t=HH:MM` pins it)
-  - an animated ocean shader with sun/moon glitter
+  - **carved-out island**: a mask shader discards everything that isn't
+    Cortes and its satellite islands, leaving it afloat in open sea
+    (`C` toggles, `?carve=0` keeps the surrounding world)
+  - **vertical exaggeration** of the terrain (`?ex=2.2`, default 1.6)
+  - **real weather** from Open-Meteo: overcast dims the light, wind drives
+    the clouds and sea state, rain/snow fall as particles
+    (`?wx=rain|snow|storm|clear` to preview)
+  - an animated ocean shader with sun/moon glitter and storm seas,
+    atmospheric haze, night settlement lights
   - drifting clouds, wheeling gulls, a humpback that surfaces in Sutil
-    Channel, and the Heriot Bay–Whaletown ferry crossing on (approximately)
-    its real schedule
+    Channel, and the Heriot Bay–Whaletown ferry (with wake) crossing on
+    (approximately) its real schedule
+  - mobile-friendly: touch orbit, tap-to-focus bottom-sheet detail
   - **floating info cards** color-coded by category, tethered to their
     geolocation, height ∝ importance, opacity ∝ recency; hover to preview,
     click to focus (camera flies in, detail panel opens); legend chips filter
