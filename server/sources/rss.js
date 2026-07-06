@@ -12,6 +12,9 @@ const FEEDS = [
   },
   { url: 'https://cortescurrents.ca/feed/', name: 'cortes-currents', category: 'news' },
   { url: 'https://www.campbellrivermirror.com/feed/', name: 'cr-mirror', category: 'news', filter: /cortes/i },
+  { url: 'https://vanisle.news/feed/', name: 'vanisle', category: 'news', filter: /cortes|klahoose|quadra.+cortes/i },
+  // NOTE: cortesisland.com Tideline (community notice board) has no public
+  // RSS — would need a scraper; see devlog/20260705-data-sources.md
 ];
 
 const parser = new XMLParser({ ignoreAttributes: false });

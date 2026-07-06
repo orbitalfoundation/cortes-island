@@ -123,6 +123,15 @@ async function boot() {
     maxCards: IS_MOBILE ? 46 : 110,
   });
 
+  // zoom buttons: dolly toward/away from the orbit target
+  const dolly = (k) => {
+    const offset = camera.position.clone().sub(controls.target);
+    const len = Math.min(controls.maxDistance, Math.max(controls.minDistance, offset.length() * k));
+    camera.position.copy(controls.target).add(offset.setLength(len));
+  };
+  document.getElementById('zoom-in').addEventListener('click', () => dolly(0.72));
+  document.getElementById('zoom-out').addEventListener('click', () => dolly(1.4));
+
   // about overlay
   const aboutEl = document.getElementById('about');
   document.getElementById('about-link').addEventListener('click', () => aboutEl.classList.remove('hidden'));
@@ -218,6 +227,14 @@ async function boot() {
       pos: life.whale.pos,
       label: life.whale.surfacing ? 'humpback · surfacing!' : 'humpback · out here somewhere',
       show: true,
+    }),
+  });
+  addMarker({
+    icon: '🛩',
+    get: () => ({
+      pos: life.plane.pos,
+      label: `seaplane · ${life.plane.phase}`,
+      show: life.plane.phase !== 'away down south',
     }),
   });
   const mv = new THREE.Vector3();

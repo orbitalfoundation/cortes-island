@@ -50,6 +50,16 @@
     "topics": ["radio", "music", "community media"]
   },
   {
+    "title": "CorilAir seaplane — the Vancouver flight",
+    "link": "https://www.corilair.com/scheduled-flights/from-vancouver/",
+    "summary": "CorilAir's scheduled floatplane leaves the Seair dock at YVR South Terminal at 4:00 pm and works its way up the Discovery Islands — the fast way on and off Cortes (about an hour in the air, from $449 one-way). The southbound run gathers passengers late morning toward the 12:30 Campbell River departure.",
+    "lat": 50.0975, "lon": -125.0245,
+    "place": "Gorge Harbour",
+    "category": "marine",
+    "importance": 0.55,
+    "topics": ["seaplane", "corilair", "travel", "gorge harbour"]
+  },
+  {
     "title": "The Hague–Gunflint community watershed",
     "link": "https://www.cortesisland.com",
     "summary": "Hague and Gunflint Lakes form the island's freshwater heart. Water is shed from the surrounding land after rain and snowmelt, traveling through streams and groundwater into the lakes — what happens on the land shapes the health of the water.",

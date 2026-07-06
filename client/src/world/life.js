@@ -135,6 +135,98 @@ function createFerry({ scene, frame, ferryRoute, seaY }) {
   return { update, state };
 }
 
+// --- seaplane ----------------------------------------------------------------
+// CorilAir's scheduled run: leaves the YVR South Terminal dock at 16:00 and
+// works up the islands — we show the Cortes leg arriving into Gorge Harbour
+// around 17:00, overnighting at the dock, and heading out ~08:05. Cartoon
+// scale, like the ferry, so it reads from altitude.
+const PLANE_ARRIVE = { start: 16 * 60 + 50, end: 17 * 60 + 6 };  // minutes local
+const PLANE_DEPART = { start: 8 * 60 + 5, end: 8 * 60 + 21 };
+
+function buildSeaplane() {
+  const plane = new THREE.Group();
+  const white = new THREE.MeshStandardMaterial({ color: 0xf6f8f9, roughness: 0.4 });
+  const red = new THREE.MeshStandardMaterial({ color: 0xd8402b, roughness: 0.5 });
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(2.2, 9, 6, 12), white);
+  body.rotation.z = Math.PI / 2;
+  body.position.y = 4.5;
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(1.6, 10, 8), red);
+  nose.position.set(7.2, 4.5, 0);
+  const wing = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.5, 18), red);
+  wing.position.set(1.5, 7, 0);
+  const tailFin = new THREE.Mesh(new THREE.BoxGeometry(2.6, 4, 0.4), red);
+  tailFin.position.set(-6.5, 6.5, 0);
+  const tailWing = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.4, 7), white);
+  tailWing.position.set(-6.5, 5.6, 0);
+  const floatL = new THREE.Mesh(new THREE.CapsuleGeometry(0.9, 10, 4, 8), white);
+  floatL.rotation.z = Math.PI / 2;
+  floatL.position.set(1, 0.9, 3);
+  const floatR = floatL.clone(); floatR.position.z = -3;
+  const prop = new THREE.Mesh(
+    new THREE.CircleGeometry(3, 20),
+    new THREE.MeshBasicMaterial({ color: 0x99a4ab, transparent: true, opacity: 0.35, side: THREE.DoubleSide }),
+  );
+  prop.rotation.y = Math.PI / 2;
+  prop.position.set(8.6, 4.8, 0);
+  plane.add(body, nose, wing, tailFin, tailWing, floatL, floatR, prop);
+  plane.scale.setScalar(3);
+  return { plane, prop };
+}
+
+function createSeaplane({ scene, frame, seaY }) {
+  // approach from the southeast over the strait, around Sutil, up the west
+  // side and into the Gorge; waypoint heights in meters
+  const WPTS = [
+    [49.955, -124.740, 900], [49.985, -124.850, 640], [50.005, -124.960, 420],
+    [50.030, -125.030, 260], [50.062, -125.045, 140], [50.083, -125.037, 50],
+    [50.0895, -125.0295, 8], [50.0935, -125.0255, 0], [50.0975, -125.0245, 0],
+  ];
+  const pts = WPTS.map(([la, lo, h]) => {
+    const v = frame.toLocal(la, lo, 0);
+    v.y = h > 0 ? h : seaY + 1;
+    return v;
+  });
+  const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal', 0.6);
+  const { plane, prop } = buildSeaplane();
+  scene.add(plane);
+  const pos = new THREE.Vector3(), ahead = new THREE.Vector3();
+  const state = { flying: false, phase: 'docked', pos: plane.position };
+
+  function update(date, t) {
+    const now = minutesNow(date);
+    let u = null, dir = 1;
+    if (now >= PLANE_ARRIVE.start && now <= PLANE_ARRIVE.end) {
+      u = (now - PLANE_ARRIVE.start) / (PLANE_ARRIVE.end - PLANE_ARRIVE.start);
+      state.phase = 'inbound from Vancouver';
+    } else if (now >= PLANE_DEPART.start && now <= PLANE_DEPART.end) {
+      u = 1 - (now - PLANE_DEPART.start) / (PLANE_DEPART.end - PLANE_DEPART.start);
+      dir = -1;
+      state.phase = 'departing for Campbell River';
+    } else {
+      const docked = now > PLANE_ARRIVE.end || now < PLANE_DEPART.start;
+      state.phase = docked ? 'at the Gorge Harbour dock' : 'away down south';
+      plane.visible = docked;
+      state.flying = false;
+      if (docked) {
+        curve.getPointAt(0.999, pos);
+        plane.position.copy(pos);
+        plane.position.y = seaY + 1 + Math.sin(date.valueOf() / 1100) * 0.25;
+        plane.rotation.set(0, Math.PI * 0.3, 0);
+      }
+      return;
+    }
+    plane.visible = true;
+    state.flying = true;
+    const k = Math.min(0.999, Math.max(0.001, u));
+    curve.getPointAt(k, pos);
+    curve.getPointAt(Math.min(0.999, k + 0.004 * dir), ahead);
+    plane.position.copy(pos);
+    plane.lookAt(ahead);
+    prop.rotation.x = t * 40; // spinning blur disc
+  }
+  return { update, state };
+}
+
 // --- birds -------------------------------------------------------------------
 function createBirds({ scene, frame, places }) {
   const FLOCKS = 4, PER = 12;
@@ -254,13 +346,16 @@ export function createLife({ scene, frame, config, seaY = SEA_LEVEL + 2 }) {
   const ferry = createFerry({ scene, frame, ferryRoute: config.ferryRoute, seaY });
   const birds = createBirds({ scene, frame, places: config.places });
   const whale = createWhale({ scene, frame, seaY });
+  const plane = createSeaplane({ scene, frame, seaY });
   return {
     ferry: ferry.state,
     whale: whale.state,
+    plane: plane.state,
     update(t, date, dt) {
       ferry.update(date, dt);
       birds.update(t);
       whale.update(t);
+      plane.update(date, t);
     },
   };
 }
