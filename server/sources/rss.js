@@ -13,8 +13,13 @@ const FEEDS = [
   { url: 'https://cortescurrents.ca/feed/', name: 'cortes-currents', category: 'news' },
   { url: 'https://www.campbellrivermirror.com/feed/', name: 'cr-mirror', category: 'news', filter: /cortes/i },
   { url: 'https://vanisle.news/feed/', name: 'vanisle', category: 'news', filter: /cortes|klahoose|quadra.+cortes/i },
-  // NOTE: cortesisland.com Tideline (community notice board) has no public
-  // RSS — would need a scraper; see devlog/20260705-data-sources.md
+  // the Tideline's RSS is unadvertised — found in the page source as a CGI
+  // endpoint. Community notices & events; no preset category so enrichment
+  // sorts events from general notices.
+  {
+    url: 'https://www.cortesisland.com/cgi-bin/tideline/show_rss.cgi?S=0',
+    name: 'tideline', category: null, charset: 'iso-8859-1',
+  },
 ];
 
 const parser = new XMLParser({ ignoreAttributes: false });
@@ -35,7 +40,7 @@ export default {
     const out = [];
     for (const feed of FEEDS) {
       try {
-        const xml = await get(feed.url);
+        const xml = await get(feed.url, { charset: feed.charset });
         const doc = parser.parse(xml);
         const channel = doc?.rss?.channel ?? doc?.feed;
         const entries = arr(channel?.item ?? channel?.entry);

@@ -244,11 +244,14 @@ async function boot() {
       mv.copy(s.pos).setY(Math.max(s.pos.y, 0) + 30).project(camera);
       const behind = mv.z > 1;
       const x = (mv.x * 0.5 + 0.5) * innerWidth, y = (-mv.y * 0.5 + 0.5) * innerHeight;
-      const on = s.show && !behind && x > 0 && x < innerWidth && y > 0 && y < innerHeight;
+      const on = s.show && !behind && x > -40 && x < innerWidth + 40 && y > 0 && y < innerHeight;
       m.el.style.display = on ? '' : 'none';
       if (!on) continue;
       m.el.textContent = `${m.icon} ${s.label}`;
-      m.el.style.transform = `translate(${x.toFixed(0)}px, ${y.toFixed(0)}px) translate(-50%, -130%)`;
+      // keep the chip fully on screen (and off the left rail) even when its
+      // subject sits near the edge
+      const cx = Math.max(IS_MOBILE ? 150 : 200, Math.min(innerWidth - 90, x));
+      m.el.style.transform = `translate(${cx.toFixed(0)}px, ${y.toFixed(0)}px) translate(-50%, -130%)`;
     }
   }
 

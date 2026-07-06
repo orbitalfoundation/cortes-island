@@ -42,20 +42,32 @@ body {
   font-size: 26px; font-weight: 650; letter-spacing: 0.04em;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7);
 }
-#clock { font-size: 13px; color: var(--ink-2); margin-top: 3px; letter-spacing: 0.06em; }
-#weather { font-size: 12px; color: var(--ink-2); margin-top: 2px; letter-spacing: 0.05em; opacity: 0.85; }
+#clock, #weather {
+  color: #d7e1e9;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+#clock { font-size: 13px; margin-top: 3px; letter-spacing: 0.06em; }
+#weather { font-size: 12px; margin-top: 2px; letter-spacing: 0.05em; }
 
 #hud-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 #audio-controls { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: auto; }
 .chip.audio { font-size: 12px; }
 .chip.audio.off { opacity: 0.4; }
 
-#search {
+/* the left rail: search on top of the category filters — one column,
+   nothing to break when the viewport narrows */
+#left-rail {
+  position: fixed; left: 18px; top: 50%;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 10px;
+  width: 150px;
   pointer-events: auto;
-  flex: 0 1 300px;
+}
+#search {
+  width: 100%;
   background: var(--panel); border: 1px solid var(--panel-line);
-  border-radius: 999px; padding: 8px 16px;
-  color: var(--ink); font-size: 13px; font-family: inherit;
+  border-radius: 999px; padding: 7px 14px;
+  color: var(--ink); font-size: 12px; font-family: inherit;
   backdrop-filter: blur(10px);
   outline: none;
   transition: border-color 0.2s;
@@ -63,12 +75,9 @@ body {
 #search:focus { border-color: rgba(255, 255, 255, 0.3); }
 #search::placeholder { color: var(--ink-2); }
 
-/* vertical legend on the left — kinder to thumbs and to landscape 3D */
 #legend {
-  position: fixed; left: 18px; top: 50%;
-  transform: translateY(-50%);
   display: flex; flex-direction: column; gap: 7px;
-  pointer-events: auto;
+  align-items: flex-start;
 }
 
 #footer-links {
@@ -257,9 +266,16 @@ body {
   .card-title { font-size: 11.5px; -webkit-line-clamp: 2; }
   #title h1 { font-size: 19px; }
   #hud { padding: 14px 14px calc(12px + env(safe-area-inset-bottom)); }
-  #hud-top { flex-wrap: wrap; }
-  #search { flex: 1 1 100%; order: 3; font-size: 16px; } /* 16px stops iOS zoom */
-  #legend { left: 10px; gap: 6px; }
+  #audio-controls { gap: 6px; }
+  .chip.audio {
+    font-size: 10.5px; padding: 5px 10px;
+    max-width: 46vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    display: block;
+  }
+  .life-marker { font-size: 10.5px; padding: 4px 9px; }
+  #left-rail { left: 10px; width: 128px; gap: 8px; }
+  #search { font-size: 16px; padding: 6px 12px; } /* 16px stops iOS zoom */
+  #legend { gap: 6px; }
   .chip { flex: none; padding: 6px 10px; font-size: 11px; }
   #footer-links { right: 10px; bottom: calc(8px + env(safe-area-inset-bottom)); }
   /* detail becomes a bottom sheet */

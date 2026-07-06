@@ -2,14 +2,16 @@
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 cortes-viz/0.1';
 
-export async function get(url, { as = 'text', headers = {}, timeoutMs = 15000 } = {}) {
+export async function get(url, { as = 'text', headers = {}, timeoutMs = 15000, charset = null } = {}) {
   const res = await fetch(url, {
     headers: { 'User-Agent': UA, ...headers },
     signal: AbortSignal.timeout(timeoutMs),
     redirect: 'follow',
   });
   if (!res.ok) throw new Error(`${res.status} ${url}`);
-  return as === 'json' ? await res.json() : await res.text();
+  if (as === 'json') return await res.json();
+  if (charset) return new TextDecoder(charset).decode(await res.arrayBuffer());
+  return await res.text();
 }
 
 export function stripHtml(s) {
