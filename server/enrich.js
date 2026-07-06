@@ -59,7 +59,10 @@ export function enrichHeuristic(item) {
         return { item, drop: true };
       }
     }
-  } else if (!insideBbox(item.geo.lat, item.geo.lon)) {
+  } else if (!insideBbox(item.geo.lat, item.geo.lon)
+    && !['facts', 'seeds'].includes(item.source.adapter)) {
+    // curated layers may deliberately sit in the wider storyshed (Toba,
+    // Quadra, Church House); everything else must be on/near the island
     return { item, drop: true };
   }
 

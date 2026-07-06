@@ -18,11 +18,71 @@
           <div id="clock"></div>
           <div id="weather"></div>
         </div>
+        <input id="search" type="search" placeholder="search the island…" autocomplete="off" />
         <div id="audio-controls"></div>
       </div>
       <div id="legend"></div>
+      <div id="footer-links">
+        <button id="about-link">about</button>
+        <a href="https://github.com/orbitalfoundation/cortes-island" target="_blank" rel="noopener">source</a>
+        <a href="https://github.com/orbitalfoundation" target="_blank" rel="noopener">orbital foundation</a>
+      </div>
     </div>
     <div id="life-markers"></div>
+    <div id="about" class="hidden">
+      <div id="about-panel">
+        <button class="close" aria-label="close">×</button>
+        <h2>A living portrait of Cortes Island</h2>
+        <p class="about-lede">This is an experiment in making a place legible: one island, its
+        news, wildlife, weather, tides, history and lore, gathered into a single view you can
+        fly around. It is also, deliberately, an experiment in asking whether that is a good
+        idea.</p>
+
+        <h3>Where the data comes from</h3>
+        <p>Live feeds: local and regional news (Cortes Currents, Campbell River Mirror, Google
+        News), iNaturalist wildlife observations, Wikipedia and Wikimedia Commons, OpenStreetMap
+        places, Openverse and Flickr photos, Mastodon, Open-Meteo weather, and Canadian
+        Hydrographic Service tide predictions from the Whaletown station. CKTZ 89.5, the
+        island's community radio, streams live through the radio button.</p>
+        <p>Curated layers: territory acknowledgment and cultural anchors; an "island almanac"
+        of dated places and events; deep cuts of history, chart lore and marine hazards; and
+        habitat spots. Much of this was mined from a frontier language model's world knowledge,
+        then hand-reviewed — every such item is labeled, carries a confidence flag
+        (documented / reported / oral tradition / legend), and lives in
+        <a href="https://github.com/orbitalfoundation/cortes-island/tree/main/data" target="_blank" rel="noopener">versioned files anyone can correct</a>.</p>
+
+        <h3>Should an island be transparent?</h3>
+        <p>Total legibility is an old dream — and an old danger. Mapping has never been
+        neutral: the 1860 Admiralty survey that marked south Cortes as "open prairie land" was
+        erasing Indigenous cultivation even as it recorded the shoreline, and the settler names
+        it fixed overwrote ʔayʔaǰuθəm ones within a generation. States and companies have long
+        used legibility to tax, extract and dispossess; James C. Scott called this "seeing like
+        a state." A perfect real-time portrait of a small community could be a gift — or a
+        surveillance instrument, a gentrification brochure, a harvest map for poachers pointed
+        straight at eagle nests and clam beds.</p>
+        <p>There is also a counter-tradition this project tries to stand in: social
+        cartography and counter-mapping — communities mapping themselves, on their own terms,
+        to hold ground rather than lose it. Indigenous nations have led here, from
+        counter-maps asserting title to the First Nations principles of
+        <a href="https://fnigc.ca/ocap-training/" target="_blank" rel="noopener">OCAP®</a>
+        (ownership, control, access, possession) and the
+        <a href="https://www.gida-global.org/care" target="_blank" rel="noopener">CARE principles</a>
+        for Indigenous data governance: collective benefit, authority to control, responsibility,
+        ethics. The lesson generalizes: data about a place belongs, first, to the people who
+        live it.</p>
+        <p>Our working answers, imperfect and revisable: use only public or freely licensed
+        sources; link everything to its origin; label speculation and lore as such; treat
+        culturally sensitive sites with care (some things are named but deliberately not
+        precisely located); keep the whole pipeline open source so the portrait can be
+        audited, corrected, or forked by the people portrayed. What this project does not yet
+        have — and what would matter most — is genuine participation: islanders, and the
+        Klahoose, Tla'amin and Homalco nations whose territory this is, deciding what belongs
+        here, contributing their own layers, and owning the result. Transparency without
+        consent is extraction; transparency with stewardship might be memory.</p>
+        <p>If you live on Cortes and want something added, corrected, or removed —
+        <a href="https://github.com/orbitalfoundation/cortes-island/issues" target="_blank" rel="noopener">the door is open</a>.</p>
+      </div>
+    </div>
     <div id="detail" class="hidden"></div>
     <div id="loading"><div class="pulse"></div><span>arriving over Cortes Island…</span></div>
   </div>

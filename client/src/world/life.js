@@ -15,27 +15,36 @@ const CROSSING_MIN = 45;
 function minutesNow(date) { return date.getHours() * 60 + date.getMinutes() + date.getSeconds() / 60; }
 const toMin = (s) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
 
+// Deliberately cartoonish and ~3x life size — a toy ferry you can actually
+// spot from the default aerial view.
 function buildFerry() {
   const ferry = new THREE.Group();
-  const white = new THREE.MeshStandardMaterial({ color: 0xf2f4f5, roughness: 0.6 });
-  const blue = new THREE.MeshStandardMaterial({ color: 0x1c3d5c, roughness: 0.7 });
-  const hull = new THREE.Mesh(new THREE.BoxGeometry(46, 6, 14), blue);
+  const white = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45 });
+  const blue = new THREE.MeshStandardMaterial({ color: 0x1d5c8f, roughness: 0.55 });
+  const red = new THREE.MeshStandardMaterial({ color: 0xe0452a, roughness: 0.5 });
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(46, 7, 16), blue);
   hull.position.y = 3;
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(40, 5, 12), white);
-  deck.position.y = 8.5;
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(18, 5, 9), white);
-  cabin.position.y = 13.5;
-  const stack = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.8, 6), new THREE.MeshStandardMaterial({ color: 0xc23b22 }));
-  stack.position.set(-4, 18, 0);
-  ferry.add(hull, deck, cabin, stack);
+  const bow = new THREE.Mesh(new THREE.CylinderGeometry(8, 8, 7, 16, 1, false, 0, Math.PI), blue);
+  bow.rotation.z = Math.PI / 2; bow.rotation.y = Math.PI / 2;
+  bow.position.set(23, 3, 0);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(40, 6, 14), white);
+  deck.position.y = 9.5;
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(20, 6, 11), white);
+  cabin.position.y = 15.5;
+  const stack = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.8, 9), red);
+  stack.position.set(-6, 22, 0);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(46.6, 1.6, 16.4), red);
+  stripe.position.y = 6.6;
+  ferry.add(hull, bow, deck, cabin, stack, stripe);
   // running lights for night
   const lightMat = new THREE.MeshBasicMaterial({ color: 0xfff2b8 });
   for (const x of [-16, -6, 4, 14]) {
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.8), lightMat);
-    lamp.position.set(x, 11.5, 6.2);
-    const lamp2 = lamp.clone(); lamp2.position.z = -6.2;
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(1.1), lightMat);
+    lamp.position.set(x, 12.5, 7.4);
+    const lamp2 = lamp.clone(); lamp2.position.z = -7.4;
     ferry.add(lamp, lamp2);
   }
+  ferry.scale.setScalar(3);
   return ferry;
 }
 
@@ -186,36 +195,46 @@ function createWhale({ scene, frame, seaY }) {
   const a = frame.toLocal(50.045, -125.06, 0);
   const b = frame.toLocal(50.13, -125.09, 0);
 
-  const body = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 24, 16),
-    new THREE.MeshStandardMaterial({ color: 0x22282e, roughness: 0.35 }),
-  );
-  body.scale.set(13, 3.2, 3.4);
+  // cartoon whale: big, glossy, with a proper tail fluke — visible from altitude
+  const whaleMat = new THREE.MeshStandardMaterial({ color: 0x2b3a47, roughness: 0.3 });
+  const bellyMat = new THREE.MeshStandardMaterial({ color: 0xb9c8d2, roughness: 0.5 });
+  const body = new THREE.Group();
+  const torso = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), whaleMat);
+  torso.scale.set(40, 11, 12);
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), bellyMat);
+  belly.scale.set(34, 8, 10.5);
+  belly.position.y = -3;
+  const fluke = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 14, 3, 3), whaleMat);
+  fluke.rotation.x = Math.PI / 2;
+  fluke.rotation.z = Math.PI;
+  fluke.scale.set(1.6, 1, 0.5);
+  fluke.position.set(-44, 6, 0);
+  body.add(torso, belly, fluke);
   body.visible = false;
   scene.add(body);
 
   const spout = new THREE.Sprite(new THREE.SpriteMaterial({
-    color: 0xdfe9ef, transparent: true, opacity: 0, depthWrite: false,
+    color: 0xeaf3f8, transparent: true, opacity: 0, depthWrite: false,
   }));
-  spout.scale.set(6, 14, 1);
+  spout.scale.set(18, 42, 1);
   scene.add(spout);
 
-  const CYCLE = 95; // seconds between surfacings
+  const CYCLE = 55; // seconds between surfacings
   const pos = new THREE.Vector3();
 
   function update(t) {
     const cyc = t % CYCLE;
     const which = Math.floor(t / CYCLE) * 0.37;
     pos.lerpVectors(a, b, (Math.sin(which) + 1) / 2);
-    if (cyc < 9) {
+    if (cyc < 12) {
       // arc up, blow, roll under
-      const k = cyc / 9;
+      const k = cyc / 12;
       const arc = Math.sin(k * Math.PI);
       body.visible = true;
-      body.position.set(pos.x + cyc * 6, seaY - 4.4 + arc * 3.4, pos.z);
-      body.rotation.z = (k - 0.5) * -0.5;
-      spout.position.set(body.position.x + 8, body.position.y + 9, body.position.z);
-      spout.material.opacity = k < 0.35 ? arc * 0.75 : Math.max(0, 0.75 - (k - 0.35) * 2.4);
+      body.position.set(pos.x + cyc * 9, seaY - 13 + arc * 15, pos.z);
+      body.rotation.z = (k - 0.5) * -0.55;
+      spout.position.set(body.position.x + 26, body.position.y + 32, body.position.z);
+      spout.material.opacity = k < 0.35 ? arc * 0.85 : Math.max(0, 0.85 - (k - 0.35) * 2.4);
       state.surfacing = true;
       state.pos.copy(body.position);
     } else {

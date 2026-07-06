@@ -54,6 +54,9 @@ export function makeItem(raw) {
       category: raw.category ?? null, // enrichment fills / verifies
       importance: raw.importance ?? null,
       topics: Array.isArray(raw.topics) ? raw.topics.slice(0, 8) : [],
+      // 'float' = news-like card in the sky; 'ground' = informational marker
+      // pinned just above the terrain (habitat spots, POIs, hazards)
+      tier: raw.tier === 'ground' ? 'ground' : 'float',
     },
     fetchedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

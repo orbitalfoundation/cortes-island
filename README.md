@@ -1,10 +1,15 @@
-# cortes — a living portrait of Cortes Island
+# cortes-island — a living portrait of Cortes Island
+
+### ✨ **[Visit the live island → cortes.exe.xyz](https://cortes.exe.xyz)** ✨
+
+[![Cortes Island living portrait](docs/cortes.png)](https://cortes.exe.xyz)
 
 A photorealistic 3D visualization of Cortes Island, BC, with a floating cloud
 of geolocated information — news, wildlife observations, photos, community
-posts — hovering over the places they belong to.
-
-![architecture](docs/arch.md)
+posts, Indigenous and cultural landmarks — hovering over the places they
+belong to. Real time-of-day, real weather, real ferry schedule, and the
+island's actual community radio. A project of
+[Orbital Foundation](https://github.com/orbitalfoundation).
 
 ## What it does
 

@@ -53,6 +53,7 @@ export default {
         if (lat == null) return null;
         return {
           adapter: 'osm',
+          tier: 'ground', // POIs are wayfinding, not news
           title: tags.name,
           link: `https://www.openstreetmap.org/${el.type}/${el.id}`,
           summary: describe(tags),

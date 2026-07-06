@@ -6,6 +6,7 @@
 // works on a bare laptop; the docker-compose deployment always has mongo.
 
 import { MongoClient } from 'mongodb';
+import { isDupe, merge, pickWinner, titleTokens } from './dedupe.js';
 
 export async function attachStore(bus, { mongoUrl, dbName = 'cortes', log = console } = {}) {
   let col = null;
@@ -55,7 +56,44 @@ export async function attachStore(bus, { mongoUrl, dbName = 'cortes', log = cons
     return col ? await col.countDocuments() : mem.size;
   }
 
-  const store = { get, put, query, count, get backend() { return col ? 'mongo' : 'memory'; } };
+  async function remove(id) {
+    if (col) await col.deleteOne({ id });
+    else mem.delete(id);
+    index.delete(id);
+  }
+
+  // in-memory dedupe index: id -> {id, tokens, geo, ...skeleton}
+  const index = new Map();
+  let indexReady = false;
+  async function ensureIndex() {
+    if (indexReady) return;
+    indexReady = true;
+    for (const it of await query({ limit: 10000 })) {
+      index.set(it.id, { id: it.id, tokens: titleTokens(it.content.title), geo: it.geo, adapter: it.source.adapter });
+    }
+  }
+  function indexPut(item) {
+    index.set(item.id, { id: item.id, tokens: titleTokens(item.content.title), geo: item.geo, adapter: item.source.adapter });
+  }
+
+  // find an existing different-id item that is the same real-world thing
+  async function findDupe(item) {
+    await ensureIndex();
+    const probe = { content: item.content, geo: item.geo, tokens: titleTokens(item.content.title), adapter: item.source.adapter };
+    for (const c of index.values()) {
+      if (c.id === item.id) continue;
+      if (isDupe(probe, { content: { title: '' }, tokens: c.tokens, geo: c.geo, adapter: c.adapter })) {
+        const full = await get(c.id);
+        if (full) return full;
+      }
+    }
+    return null;
+  }
+
+  const store = {
+    get, put, query, count, remove, findDupe, indexPut,
+    get backend() { return col ? 'mongo' : 'memory'; },
+  };
 
   bus.register({
     id: 'store.persist',
@@ -83,8 +121,21 @@ export async function attachStore(bus, { mongoUrl, dbName = 'cortes', log = cons
           bus.resolve({ item_changed: merged, novel: false });
         }
       } else {
-        await put(item);
-        bus.resolve({ item_changed: item, novel: true });
+        // same story/place from another source? merge instead of duplicating
+        const twin = await findDupe(item);
+        if (twin) {
+          const [winner, loser] = pickWinner(twin, item);
+          merge(winner, loser);
+          winner.updatedAt = new Date().toISOString();
+          if (winner.id !== twin.id) await remove(twin.id);
+          await put(winner);
+          indexPut(winner);
+          bus.resolve({ item_changed: winner, novel: false });
+        } else {
+          await put(item);
+          indexPut(item);
+          bus.resolve({ item_changed: item, novel: true });
+        }
       }
     },
   });

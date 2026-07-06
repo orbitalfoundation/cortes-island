@@ -51,6 +51,27 @@ export async function createServer({
 
   app.post('/api/fetch', async () => ({ ok: true, stats: await runOnce(bus, log) }));
 
+  // tide predictions — DFO/CHS Whaletown station, hourly, cached for an hour
+  const WHALETOWN_STATION = '5cebf1de3d0f4a073c4bb987';
+  let tideCache = { at: 0, data: null };
+  app.get('/api/tides', async () => {
+    if (Date.now() - tideCache.at < 3600_000 && tideCache.data) return tideCache.data;
+    try {
+      const from = new Date(Date.now() - 3600_000).toISOString().slice(0, 13) + ':00:00Z';
+      const to = new Date(Date.now() + 30 * 3600_000).toISOString().slice(0, 13) + ':00:00Z';
+      const res = await fetch(
+        `https://api-iwls.dfo-mpo.gc.ca/api/v1/stations/${WHALETOWN_STATION}/data?time-series-code=wlp&from=${from}&to=${to}&resolution=SIXTY_MINUTES`,
+        { headers: { 'User-Agent': 'cortes-viz/0.1' }, signal: AbortSignal.timeout(15000) },
+      );
+      const raw = await res.json();
+      const series = raw.map((p) => ({ t: p.eventDate, v: p.value }));
+      tideCache = { at: Date.now(), data: { ok: true, station: 'Whaletown', series } };
+    } catch (err) {
+      tideCache = { at: Date.now() - 3000_000, data: { ok: false, error: err.message } };
+    }
+    return tideCache.data;
+  });
+
   if (existsSync(webDist)) {
     app.register(fastifyStatic, { root: resolve(webDist) });
     app.setNotFoundHandler((req, reply) => {

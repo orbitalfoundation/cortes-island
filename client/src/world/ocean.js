@@ -8,7 +8,7 @@ import * as THREE from 'three';
 // (~ -18 m around northern Georgia Strait). +2 m so our water covers theirs.
 export const SEA_LEVEL = -16;
 
-export function createOcean({ scene, exaggeration = 1, opaque = false }) {
+export function createOcean({ scene, exaggeration = 1, opaque = false, enabled = true }) {
   const geo = new THREE.PlaneGeometry(420000, 420000, 1, 1);
   const uniforms = {
     uTime: { value: 0 },
@@ -93,11 +93,17 @@ export function createOcean({ scene, exaggeration = 1, opaque = false }) {
   mesh.rotation.x = -Math.PI / 2;
   mesh.position.y = SEA_LEVEL * exaggeration + 2;
   mesh.renderOrder = 1;
+  mesh.visible = enabled;
   scene.add(mesh);
 
   return {
     seaY: mesh.position.y,
-    setOpaque(on) { uniforms.uOpaque.value = on ? 1 : 0; },
+    // carve mode needs the shader sea (it owns the carved-away void), so
+    // toggling carve re-enables it even when config turns the water off
+    setOpaque(on) {
+      uniforms.uOpaque.value = on ? 1 : 0;
+      mesh.visible = enabled || on;
+    },
     update(t, skyState, wx) {
       uniforms.uTime.value = t;
       if (skyState) {

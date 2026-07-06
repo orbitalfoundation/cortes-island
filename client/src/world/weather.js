@@ -51,6 +51,31 @@ export function createWeather({ scene, island, hudEl }) {
     return true;
   }
 
+  // tide state from the Whaletown DFO station, folded into the HUD line
+  state.tide = null;
+  async function refreshTides() {
+    try {
+      const data = await (await fetch('/api/tides')).json();
+      if (!data.ok) return;
+      const now = Date.now();
+      const series = data.series.map((p) => ({ t: Date.parse(p.t), v: p.v }));
+      const i = Math.max(1, series.findIndex((p) => p.t > now));
+      const cur = series[i - 1], next = series[i];
+      if (!cur || !next) return;
+      const rising = next.v > cur.v;
+      // walk forward to the turning point
+      let peak = next;
+      for (let j = i; j < series.length - 1; j++) {
+        if (rising ? series[j + 1].v < series[j].v : series[j + 1].v > series[j].v) { peak = series[j]; break; }
+      }
+      const when = new Date(peak.t).toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Vancouver' });
+      state.tide = `tide ${cur.v.toFixed(1)} m ${rising ? 'rising' : 'falling'} · ${rising ? 'high' : 'low'} ~${when}`;
+      derive();
+    } catch { /* tide line just stays absent */ }
+  }
+  refreshTides();
+  setInterval(refreshTides, 30 * 60000);
+
   function derive() {
     state.storm = Math.min(1, state.windKmh / 60 + state.rain / 8 + state.snow / 6);
     const parts = [`${Math.round(state.temp)}°C`];
@@ -61,6 +86,7 @@ export function createWeather({ scene, island, hudEl }) {
     else if (state.cloud > 0.35) parts.push('partly cloudy');
     else parts.push('clear');
     parts.push(`wind ${Math.round(state.windKmh)} km/h ${dirLabel(state.windDir)}`);
+    if (state.tide) parts.push(state.tide);
     if (!override) state.label = parts.join(' · ');
   }
 

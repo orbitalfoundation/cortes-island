@@ -51,13 +51,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === ']') timeOffsetMs += 15 * 60000;
   if (e.key === '[') timeOffsetMs -= 15 * 60000;
   if (e.key === '0') timeOffsetMs = 0;
-  if (e.key === 'c' || e.key === 'C') {
-    if (world) {
-      const on = !world.tiles.carved;
-      world.tiles.setCarve(on);
-      world.ocean.setOpaque(on);
-    }
-  }
+  if (e.key === 'c' || e.key === 'C') world?.applyCarve?.(!world.tiles.carved);
 });
 const worldNow = () => new Date(Date.now() + timeOffsetMs);
 
@@ -72,7 +66,8 @@ async function boot() {
 
   const frame = makeFrame(config.island.lat, config.island.lon);
   const sky = createSky({ scene, renderer, island: config.island });
-  const ocean = createOcean({ scene, exaggeration: EXAG, opaque: CARVE });
+  const OCEAN = params.has('ocean') ? params.get('ocean') !== '0' : Boolean(config.ocean);
+  const ocean = createOcean({ scene, exaggeration: EXAG, opaque: CARVE, enabled: OCEAN || CARVE });
   const clouds = createClouds({ scene, count: IS_MOBILE ? 24 : 46 });
   const weather = createWeather({ scene, island: config.island, hudEl: weatherEl });
   const life = createLife({ scene, frame, config, seaY: ocean.seaY });
@@ -128,6 +123,24 @@ async function boot() {
     maxCards: IS_MOBILE ? 46 : 110,
   });
 
+  // about overlay
+  const aboutEl = document.getElementById('about');
+  document.getElementById('about-link').addEventListener('click', () => aboutEl.classList.remove('hidden'));
+  aboutEl.querySelector('.close').addEventListener('click', () => aboutEl.classList.add('hidden'));
+  aboutEl.addEventListener('click', (e) => { if (e.target === aboutEl) aboutEl.classList.add('hidden'); });
+
+  // search filters the cloud as you type
+  const searchEl = document.getElementById('search');
+  let searchDebounce = null;
+  searchEl.addEventListener('input', () => {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => cards.setSearch(searchEl.value), 200);
+  });
+  searchEl.addEventListener('keydown', (e) => {
+    e.stopPropagation(); // typing [ ] c in the box must not scrub time / carve
+    if (e.key === 'Escape') { searchEl.value = ''; cards.setSearch(''); searchEl.blur(); }
+  });
+
   // legend chips double as category filters
   for (const cat of CATEGORY_ORDER) {
     const chip = document.createElement('button');
@@ -139,6 +152,19 @@ async function boot() {
     });
     legendEl.appendChild(chip);
   }
+
+  // --- view controls ---
+  const carveChip = document.createElement('button');
+  carveChip.className = 'chip audio' + (CARVE ? '' : ' off');
+  carveChip.textContent = '🏝 island only';
+  carveChip.title = 'carve away everything but Cortes (also: C key)';
+  const applyCarve = (on) => {
+    tiles.setCarve(on);
+    ocean.setOpaque(on);
+    carveChip.classList.toggle('off', !on);
+  };
+  carveChip.addEventListener('click', () => applyCarve(!tiles.carved));
+  audioEl.appendChild(carveChip);
 
   // --- sound controls: ambience + CKTZ live radio ---
   if (config.sound !== false) {
@@ -231,7 +257,7 @@ async function boot() {
     lastTap = now;
   });
 
-  world = { frame, sky, ocean, clouds, weather, life, tiles, cards, nightLights, sound, camera, controls };
+  world = { frame, sky, ocean, clouds, weather, life, tiles, cards, nightLights, sound, camera, controls, applyCarve };
   window.__world = world; // debug hook
   for (const item of pending) cards.upsert(item);
 

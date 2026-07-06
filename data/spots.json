@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "region": "Cortes Island, British Columbia, Canada",
+    "note": "Ground-marker layer: where to reliably see wildlife and do things. Complements (does not repeat) claude-lore.json. Curated 2026-07-05.",
+    "count": 8
+  },
+  "items": [
+    {"name": "Whale watching from shore", "description": "Humpbacks pass through Sutil Channel spring through fall — watch from the Smelt Bay to Sutil Point shoreline; blows are visible on calm days, occasionally orcas in transit.", "date": "ongoing", "latitude": 50.0260, "longitude": -125.0060, "category": "wildlife_spot", "confidence": "documented"},
+    {"name": "Great blue herons — Mansons Lagoon", "description": "Herons stalk the lagoon flats at low tide year-round; bring binoculars and check the spit at dawn.", "date": "ongoing", "latitude": 50.0672, "longitude": -124.9805, "category": "wildlife_spot", "confidence": "documented"},
+    {"name": "Shorebirds on Shark Spit", "description": "Black oystercatchers, plovers and gulls work the sand of Marina Island's spit; boaters picnic mid-spit and walk the tideline.", "date": "ongoing", "latitude": 50.0850, "longitude": -125.0530, "category": "wildlife_spot", "confidence": "documented"},
+    {"name": "Eagles over Bullock Bluff", "description": "Bald eagles ride the updrafts where Sutil and Lewis channels meet at the island's north tip.", "date": "ongoing", "latitude": 50.1960, "longitude": -124.9850, "category": "wildlife_spot", "confidence": "documented"},
+    {"name": "Winter waterfowl — Gunflint Lake", "description": "Loons, buffleheads and goldeneyes raft on the lake through the cold months; the Kw'as Park shoreline trail is the viewing platform.", "date": "annual, winter", "latitude": 50.0690, "longitude": -124.9580, "category": "wildlife_spot", "confidence": "documented"},
+    {"name": "Kayak: Whaletown to the pictographs", "description": "Classic half-day paddle from the Whaletown dock through Uganda Passage to the Gorge Harbour pictograph cliff — go at mid-tide, hug the west wall slowly.", "date": "ongoing", "latitude": 50.1050, "longitude": -125.0450, "category": "insider_tip", "confidence": "documented"},
+    {"name": "Stargazing — Smelt Bay beach", "description": "No streetlights and a clear southwest horizon over the Salish Sea make Smelt Bay the island's default dark-sky beach; the Milky Way is routine on moonless nights.", "date": "ongoing", "latitude": 50.0310, "longitude": -125.0020, "category": "insider_tip", "confidence": "documented"},
+    {"name": "Salmon in Basil Creek", "description": "Chum salmon return to Basil Creek at Squirrel Cove in late fall; the Klahoose Nation and streamkeepers monitor the run.", "date": "annual, November", "latitude": 50.1260, "longitude": -124.9240, "category": "wildlife_spot", "confidence": "reported"}
+  ]
+}

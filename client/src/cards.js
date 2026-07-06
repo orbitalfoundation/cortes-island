@@ -46,6 +46,7 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
   const entries = new Map(); // id -> entry
   const hidden = new Set();  // categories toggled off
   let focused = null;
+  let searchQ = '';
   const ex = exaggeration;
 
   // --- tether lines: screen-space fat lines so they hold ~3px at any zoom ---
@@ -106,21 +107,53 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
     e.item = item;
     e.rec = recency(item);
     e.imp = item.meta.importance ?? 0.4;
-    e.floatY = 300 + e.imp * 950 + e.jitter * 180;
+    e.ground = item.meta.tier === 'ground';
+    e.floatY = e.ground ? 30 : 300 + e.imp * 950 + e.jitter * 180;
     e.color = new THREE.Color(CATEGORY_COLORS[item.meta.category] ?? '#9aa4ad');
     rebuild();
   }
 
+  // emoji for ground markers — quick visual grammar for what's there
+  function iconFor(item) {
+    const t = `${item.content.title} ${item.meta.topics.join(' ')} ${item.content.summary ?? ''}`.toLowerCase();
+    if (/whale|orca|humpback/.test(t)) return '🐋';
+    if (/seal|sea lion/.test(t)) return '🦭';
+    if (/salmon|trout|fish/.test(t)) return '🐟';
+    if (/wolf|wolves/.test(t)) return '🐺';
+    if (/eagle|heron|bird|loon|waterfowl|oystercatcher/.test(t)) return '🐦';
+    if (/kayak|paddle|canoe/.test(t)) return '🛶';
+    if (/camp/.test(t)) return '⛺';
+    if (/trail|hik/.test(t)) return '🥾';
+    if (/beach|swim/.test(t)) return '🏖️';
+    if (/stargaz|dark-sky|night/.test(t)) return '🌌';
+    if (/rock|reef|rapid|hazard|aground|shoal/.test(t)) return '⚠️';
+    if (/marina|dock|anchor|moorage|wharf/.test(t)) return '⚓';
+    if (/restaurant|cafe|food|pub|bakery|takeout/.test(t)) return '🍴';
+    if (/store|shop|market|co-op|fuel/.test(t)) return '🏪';
+    if (/school|academy/.test(t)) return '🎓';
+    if (/library|book/.test(t)) return '📚';
+    if (/museum|archive/.test(t)) return '🏛️';
+    if (/church|cemetery/.test(t)) return '⛪';
+    if (/viewpoint|bluff|lookout/.test(t)) return '🔭';
+    if (/park|forest|reserve|nature/.test(t)) return '🌲';
+    return '📍';
+  }
+
   function makeCardEl(e) {
     const el = document.createElement('div');
-    el.className = 'card';
     el.style.setProperty('--cat', CATEGORY_COLORS[e.item.meta.category] ?? '#9aa4ad');
-    const img = e.item.content.image ? `<img loading="lazy" src="${e.item.content.image}" alt="" />` : '';
-    el.innerHTML = `
-      <div class="card-head"><span class="dot"></span><span class="cat">${e.item.meta.category}</span>
-        <span class="when">${timeago(e.item)}</span></div>
-      <div class="card-title">${escapeHtml(e.item.content.title)}</div>
-      <div class="card-more">${img}<div class="card-summary">${escapeHtml((e.item.content.summary ?? '').slice(0, 180))}</div></div>`;
+    if (e.ground) {
+      el.className = 'card ground';
+      el.innerHTML = `<span class="g-icon">${iconFor(e.item)}</span><span class="g-name">${escapeHtml(e.item.content.title)}</span>`;
+    } else {
+      el.className = 'card';
+      const img = e.item.content.image ? `<img loading="lazy" src="${e.item.content.image}" alt="" />` : '';
+      el.innerHTML = `
+        <div class="card-head"><span class="dot"></span><span class="cat">${e.item.meta.category}</span>
+          <span class="when">${timeago(e.item)}</span></div>
+        <div class="card-title">${escapeHtml(e.item.content.title)}</div>
+        <div class="card-more">${img}<div class="card-summary">${escapeHtml((e.item.content.summary ?? '').slice(0, 180))}</div></div>`;
+    }
     el.addEventListener('click', (ev) => { ev.stopPropagation(); focus(e); });
     container.appendChild(el);
     return el;
@@ -139,11 +172,25 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
     return (s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
-  // choose which items get DOM cards vs glow points, rebuild buffers
+  function matchesSearch(e) {
+    if (!searchQ) return true;
+    const it = e.item;
+    const hay = `${it.content.title} ${it.content.summary ?? ''} ${it.geo?.place ?? ''} ` +
+      `${it.meta.category} ${it.meta.topics.join(' ')} ${it.source.author ?? ''}`.toLowerCase();
+    return searchQ.split(/\s+/).every((w) => hay.includes(w));
+  }
+
+  // choose which items get DOM cards vs glow points, rebuild buffers.
+  // ground-tier items always get their small marker element; floating items
+  // compete for the card budget.
   function rebuild() {
-    const all = [...entries.values()].filter((e) => !hidden.has(e.item.meta.category));
+    const vis = [...entries.values()]
+      .filter((e) => !hidden.has(e.item.meta.category) && matchesSearch(e));
+    const all = vis.filter((e) => !e.ground);
+    const grounds = vis.filter((e) => e.ground);
     all.sort((a, b) => (b.imp * b.rec) - (a.imp * a.rec));
     const carded = new Set(all.slice(0, maxCards));
+    for (const g of grounds) carded.add(g);
 
     for (const e of entries.values()) {
       const want = carded.has(e);
@@ -152,9 +199,10 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
       e.carded = want;
     }
 
-    // tether lines for carded items
+    // tether lines for carded items (ground markers need no tether)
     const linePos = [], lineCol = [];
     for (const e of carded) {
+      if (e.ground) continue;
       const y0 = e.groundY ?? 0;
       linePos.push(e.anchor.x, y0, e.anchor.z, e.anchor.x, y0 + e.floatY, e.anchor.z);
       const c = e.color;
@@ -182,9 +230,9 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
     pointGeo.setAttribute('position', new THREE.BufferAttribute(pp, 3));
     pointGeo.setAttribute('color', new THREE.BufferAttribute(pc, 3));
 
-    // ground-contact domes for every visible item
-    touch.count = Math.min(all.length, MAX_TOUCH);
-    all.slice(0, MAX_TOUCH).forEach((e, j) => {
+    // ground-contact domes for every visible item, ground markers included
+    touch.count = Math.min(vis.length, MAX_TOUCH);
+    vis.slice(0, MAX_TOUCH).forEach((e, j) => {
       const r = 20 + e.imp * 26;
       touchDummy.position.set(e.anchor.x, (e.groundY ?? e.anchor.y * ex) + 2, e.anchor.z);
       touchDummy.scale.set(r, r * 0.55, r); // squashed dome hugging the ground
@@ -200,21 +248,31 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
   const ray = new THREE.Raycaster();
   const down = new THREE.Vector3(0, -1, 0);
   let snapQueue = [];
-  function snapSome(tilesGroup) {
-    if (!snapQueue.length) snapQueue = [...entries.values()].filter((e) => e.groundY == null);
+  let revalidateAt = 0;
+  function snapSome(tilesGroup, t) {
+    if (!snapQueue.length) {
+      const unsnapped = [...entries.values()].filter((e) => e.groundY == null);
+      if (unsnapped.length) {
+        snapQueue = unsnapped;
+      } else if (t > revalidateAt) {
+        // tiles refine over time: coarse-LOD hits can be tens of meters off,
+        // leaving a few tethers floating — re-check everything periodically
+        revalidateAt = t + 12;
+        snapQueue = [...entries.values()];
+      }
+    }
     let n = 0, tries = 0;
     while (snapQueue.length && n < 3 && tries < 8) {
       const e = snapQueue.pop();
       tries++;
       if (e.groundY == null) e.snapTries = (e.snapTries ?? 0) + 1;
-      else continue;
       ray.set(new THREE.Vector3(e.anchor.x, 2500 * ex, e.anchor.z), down);
       const hit = ray.intersectObject(tilesGroup, true)[0];
       // only trust hits near the real surface — early coarse-LOD geometry can
       // sit tens of km below and must not be cached
       if (hit && hit.point.y > e.anchor.y * ex - 80 * ex && hit.point.y < e.anchor.y * ex + 900 * ex) {
-        e.groundY = hit.point.y; n++;
-      } else if (e.snapTries > 40) {
+        if (e.groundY == null || Math.abs(hit.point.y - e.groundY) > 3) { e.groundY = hit.point.y; n++; }
+      } else if (e.groundY == null && e.snapTries > 40) {
         e.groundY = Math.max(e.anchor.y * ex, 0); n++; // give up: use ellipsoid surface
       }
     }
@@ -250,7 +308,7 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
   const occupied = new Map(); // grid cell -> priority
   const sorted = [];          // entries ordered by priority, refreshed on rebuild
   function update(t, tilesGroup) {
-    if (tilesGroup) snapSome(tilesGroup);
+    if (tilesGroup) snapSome(tilesGroup, t);
     const w = container.clientWidth, h = container.clientHeight;
     if (sorted.length !== entries.size) {
       sorted.length = 0;
@@ -261,13 +319,14 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
     const CELL = 105;
     for (const e of sorted) {
       if (!e.el) continue;
-      const bob = Math.sin(t * 0.4 + e.jitter * 6.28) * 6;
+      const bob = e.ground ? 0 : Math.sin(t * 0.4 + e.jitter * 6.28) * 6;
       const worldY = (e.groundY ?? 0) + e.floatY + bob;
       v.set(e.anchor.x, worldY, e.anchor.z).project(camera);
       const behind = v.z > 1;
       const x = (v.x * 0.5 + 0.5) * w, y = (-v.y * 0.5 + 0.5) * h;
       const dist = camera.position.distanceTo(camTo.set(e.anchor.x, worldY, e.anchor.z));
-      let visible = !behind && x > -260 && x < w + 60 && y > -120 && y < h + 60 && dist < 42000;
+      const maxDist = e.ground ? 11000 : 42000; // markers reveal as you come down
+      let visible = !behind && x > -260 && x < w + 60 && y > -120 && y < h + 60 && dist < maxDist;
       if (visible && e !== focused) {
         // one card per grid cell — higher priority wins, the rest stay glow points
         const cell = (Math.round(x / CELL) << 12) | (Math.round(y / CELL) & 0xfff);
@@ -290,7 +349,12 @@ export function createCards({ scene, camera, frame, container, detailEl, onFocus
     return !hidden.has(cat);
   }
 
+  function setSearch(q) {
+    searchQ = (q ?? '').trim().toLowerCase();
+    rebuild();
+  }
+
   window.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') unfocus(); });
 
-  return { upsert, update, toggleCategory, unfocus, entries, get size() { return entries.size; } };
+  return { upsert, update, toggleCategory, setSearch, unfocus, entries, get size() { return entries.size; } };
 }
